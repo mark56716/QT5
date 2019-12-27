@@ -1,95 +1,83 @@
 #include "QtGuiApplication.h"
+#include <QString>
 #include <QMessageBox>
+#include <set>
 
-QtGuiApplication::QtGuiApplication(QWidget* parent)
+using namespace std;
+
+QtGuiApplication::QtGuiApplication(QWidget *parent)
 	: QMainWindow(parent)
 {
 	ui.setupUi(this);
-	connect(ui.pushButton, SIGNAL(returnPressed()), this, SLOT(Main()));
+
 	connect(ui.pushButton, SIGNAL(clicked()), this, SLOT(Main()));
 }
+//	Основной слот
+void QtGuiApplication::Main(){
 
-void QtGuiApplication::Main()
-{
-	QString Text = ui.textEdit->toPlainText();
-	int Type_cryption = ui.comboBox->currentIndex(); //0=Caesar, 1=Atbash
-	int Encryption = ui.checkBox->checkState();
-	int Decryption = ui.checkBox_2->checkState();
-	int Shift = ui.lineEdit->text().toInt();
-	
-	if ((Text != 0) && (Text.size() > 0) && (Type_cryption == 0) && (Shift > 0) && (Shift < 27) && (Encryption == 2) && (Decryption == 0))
-		Output(Caesar_encryption(Text, Shift));
-	else if ((Text != 0) && (Text.size() > 0) && (Type_cryption == 0) && (Shift > 0) && (Shift < 27) && (Encryption == 0) && (Decryption == 2))
-		Output(Caesar_decryption(Text, Shift));
-	else if ((Text != 0) && (Text.size() > 0) && (Type_cryption == 1) && (Encryption == 2) && (Decryption == 0))
-		Output(Atbash_encryption(Text));
-	else if ((Text != 0) && (Text.size() > 0) && (Type_cryption == 1) && (Encryption == 0) && (Decryption == 2))
-		Output(Atbash_decryption(Text));
-	else Error();
-}
+	//	Получение данных
+	QString Qtext = ui.plainTextEdit->toPlainText();
 
-QString QtGuiApplication::Caesar_encryption(QString Text, int shift)
-{
-	string str = Text.toLocal8Bit().constData();
-	for (int i = 0; i < Text.size(); i++) {
-		if (str[i] >= 'a' && str[i] <= 'z') {
-			str[i] = ('a' + (str[i] - 'a' + shift) % 26);
-		}
-		else if (str[i] >= 'A' && str[i] <= 'Z') {
-			str[i] = ('A' + (str[i] - 'A' + shift) % 26);
-		}
+	string data = Qtext.toLocal8Bit().constData();
+
+	//	При пустых входных данных вывод соответствующей ошибки
+	if (data.length() == 0) {
+		Error("Empty data!");
+		return;
 	}
-	return QString::fromStdString(str);
-}
 
-QString QtGuiApplication::Caesar_decryption(QString Text, int shift)
-{
-	string str = Text.toLocal8Bit().constData();
-	for (int i = 0; i < Text.size(); i++) {
-		if (str[i] >= 'a' && str[i] <= 'z') {
-			str[i] = ('z' - ('z' - str[i] + shift) % 26);
+	multiset <char> mst;
+
+
+	//	Заполенеие multiset только буквами английского алфавита
+	for (int i = 0; i < data.length(); i++) {
+
+		data[i] = tolower(data[i]);
+
+		if (data[i] >= 'a' && data[i] <= 'z') {
+			mst.insert(data[i]);
 		}
-		else if (str[i] >= 'A' && str[i] <= 'Z') {
-			str[i] = ('Z' - ('Z' - str[i] + shift) % 26);
+
+	}
+
+	if (mst.empty()) {
+		Error("No letters!");
+		return;
+	}
+
+	auto mst_end = mst.end();
+
+	// prev - предыдущий элемет в списке multiset
+	auto prev = *mst.begin();
+
+	string result_text = "";
+
+
+	//	Обход multiset  
+	for (auto elem = mst.begin(); elem != mst_end; elem++) {
+
+		//	Условие для избежания повторных выводов ("буква" - "количество")
+		if (prev == *elem && elem != mst.begin()) {
+			continue;
 		}
+		prev = *elem;
+
+		//	Формирование результирующей строки
+		result_text += *elem ;
+		result_text += " - ";
+		result_text += to_string(mst.count(*elem));
+		result_text += '\n';
+
 	}
-	return QString::fromStdString(str);
+	//	Вывод данных
+    ui.textBrowser->setText(QString::fromStdString(result_text));
 }
 
-QString QtGuiApplication::Atbash_encryption(QString Text)
-{
-	string str = Text.toLocal8Bit().constData();
-	for (int i = 0; i < Text.size(); i++) {
-		if (str[i] >= 'a' && str[i] <= 'z')
-			str[i] = 'z' - str[i] + 'a';
-		else if (str[i] >= 'A' && str[i] <= 'Z')
-			str[i] = 'Z' - str[i] + 'A';
-	}
-	return QString::fromStdString(str);
-}
-
-QString QtGuiApplication::Atbash_decryption(QString Text)
-{
-	string str = Text.toLocal8Bit().constData();
-	for (int i = 0; i < Text.size(); i++) {
-		if (str[i] >= 'a' && str[i] <= 'z')
-			str[i] = 'a' - str[i] + 'z';
-		else if (str[i] >= 'A' && str[i] <= 'Z')
-			str[i] = 'A' - str[i] + 'Z';
-	}
-	return QString::fromStdString(str);
-}
-
-void QtGuiApplication::Output(QString Text)
-{
-	ui.textBrowser->setPlainText(Text);
-}
-
-void QtGuiApplication::Error()
-{
+void QtGuiApplication::Error(QString mess) {
 	ui.textBrowser->setPlainText("");
+	ui.plainTextEdit->setPlainText("");
 	QMessageBox msgbox;
 	msgbox.setWindowTitle("Error");
-	msgbox.setText("Check the accuracy of the data entered!");
+	msgbox.setText(mess);
 	msgbox.exec();
 }
