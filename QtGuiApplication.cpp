@@ -39,7 +39,8 @@ void QtGuiApplication::Main(){
 		}
 
 	}
-
+	
+	//	Проверка на непустоту mutliset
 	if (mst.empty()) {
 		Error("No letters!");
 		return;
